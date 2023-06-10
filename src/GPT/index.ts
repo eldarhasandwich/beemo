@@ -4,6 +4,8 @@ import { Command, InteractionHandler } from "../HandleInteractionCreate"
 import { MessageHandler } from "../HandleMessageCreate"
 import { PRIMARY_PROMPT, completePrompt } from "./GPT"
 
+const LOGGING_ENABLED = false;
+
 type ConversationPoint = {
     speaker: string
     text: string
@@ -29,6 +31,13 @@ let state: State = {
     nextAllowedResponseTimestamp: 1
 }
 
+
+const debugLog = (input: any) => {
+
+    if (!LOGGING_ENABLED) return
+    console.debug(input)
+}
+
 const getNextResponseCooldown = (): number => { 
 
     const seconds = Math.ceil((Math.random() * 10)) + 10
@@ -37,7 +46,7 @@ const getNextResponseCooldown = (): number => {
 
 const handleEnableGpt = async (interaction: ChatInputCommandInteraction) => {
 
-    if (state.targetChannel !== interaction.channelId) {
+    if (!!state.targetChannel && state.targetChannel !== interaction.channelId) {
         await interaction.reply('`AI module is already active in another channel.`')
         return
     }
@@ -189,9 +198,15 @@ const generateAndSendMessage = async (client: Client): Promise<void> => {
 
 export const gptMessageHandler: MessageHandler = async (message, client) => {
 
+    debugLog('gptMessageHandler called')
+
+    debugLog(state)
+
     if (!state.isActive) {
         return
     }
+
+    debugLog('is active')
 
     // don't want beemo to respond to bots or itself
     if (
@@ -201,12 +216,16 @@ export const gptMessageHandler: MessageHandler = async (message, client) => {
         return
     }
 
+    debugLog('message not from bot')
+
     const { targetChannel } = state
 
     // shouldn't get here but just checking
     if (!targetChannel) {
         return
     }
+
+    debugLog(`valid target channel: ${targetChannel}`)
 
     state = {
         ...state,
